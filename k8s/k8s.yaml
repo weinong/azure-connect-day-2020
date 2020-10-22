@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: node-web-app
+spec:
+  selector:
+    matchLabels:
+      app: node-web-app
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: node-web-app
+    spec:
+      containers:
+      - name: node-web-app
+        image: weinong/node-web-app
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: node-web-app
+spec:
+  selector:
+    app: node-web-app
+  ports:
+    - protocol: TCP
+      name: http
+      port: 80
+      targetPort: 80
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: node-web-app
+  annotations:
+    kubernetes.io/ingress.class: addon-http-application-routing
+spec:
+  rules:
+    - host: node-web-app.<http-application-routing-zone-name> # replace the zone with result of `az aks show -g ${RESOURCE_GROUP} -n ${RESOURCE_NAME} --query "addonProfiles.httpapplicationrouting.config.HTTPApplicationRoutingZoneName" -o tsv`
+      http:
+        paths:
+          - backend:
+              serviceName: node-web-app # Which service the request will be forwarded to
+              servicePort: http # Which port in that service
+            path: / # Which path is this rule referring to
